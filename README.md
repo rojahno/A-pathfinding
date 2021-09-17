@@ -3,7 +3,7 @@ An A* pathfinding algorithm. The algorithm navigates the Studentersamfund to fin
 
 ## Clone
 ```python
-gh repo clone rojahno/A-pathfinding
+gh repo clone rojahno/a-star-pathfinding
 ```
 
 ## Troubleshooting
