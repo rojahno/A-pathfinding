@@ -5,6 +5,12 @@ An A* pathfinding algorithm. The algorithm navigates the Studentersamfund to fin
 ```python
 gh repo clone rojahno/A-pathfinding
 ```
+
+## Troubleshooting
+If you are having trouble with the PIL import, try running:
+```python
+pip install Pillow
+```
 ## Usage
 Select a map from 1-4
 
