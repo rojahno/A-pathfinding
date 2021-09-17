@@ -8,7 +8,9 @@ from Map import Map_Obj
 # This project is inspired by: https://www.youtube.com/watch?v=JtiK0DOeI4A&t=200s for the visuals
 # and https://medium.com/@nicholas.w.swift/easy-a-star-pathfinding-7e6689c7f7b2. for the A* algorithm.
 
-# TODO Set Width and Height dynamically???
+# Selects the map
+CURRENT_MAP = 2  # Pick a map from 1-4
+
 WIDTH = 564
 HEIGHT = 468
 
@@ -30,9 +32,6 @@ PINK = (255, 130, 185)
 
 # Sets the background color
 WIN.fill(WHITE)
-
-# Selects the map
-CURRENT_MAP = 4
 
 
 def get_map_array():
@@ -78,6 +77,11 @@ def get_end_position():
 
 
 def remove_green_color(grid):
+    """
+    Removes the green squares when the shortes path is found.
+    :param grid: The grid
+    :return:
+    """
     for array in grid:
         for square in array:
             if square.color == GREEN:
@@ -209,14 +213,12 @@ def algorithm(draw, grid):
     open_list: [Square] = PriorityQueue()
 
     # The list with the closed nodes
-    # todo can be made a hash with positions for better efficiency??
     closed_list = []
 
     # The start square
     start = get_start_position()
     start_square: Square = grid[start[0]][start[1]]
 
-    # todo check the run time of append and remove for lists in python
     hash_open_list = []
 
     # The end square
