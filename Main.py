@@ -1,5 +1,4 @@
 import pygame
-import pathlib
 from Square import Square
 from queue import PriorityQueue
 
@@ -7,9 +6,6 @@ from Map import Map_Obj
 
 # This project is inspired by: https://www.youtube.com/watch?v=JtiK0DOeI4A&t=200s for the visuals
 # and https://medium.com/@nicholas.w.swift/easy-a-star-pathfinding-7e6689c7f7b2. for the A* algorithm.
-
-# Selects the map
-CURRENT_MAP = 2  # Pick a map from 1-4
 
 WIDTH = 564
 HEIGHT = 468
@@ -26,12 +22,21 @@ GREEN = (0, 255, 0)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 ORANGE = (255, 165, 0)
-GREY = (128, 128, 128)
-DARK_GREY = (169, 169, 169)
+GREY = (200, 200, 200)
+LINE_GREY = (128, 128, 128)
+DARK_GREY = (100, 100, 100)
 PINK = (255, 130, 185)
 
 # Sets the background color
 WIN.fill(WHITE)
+
+# Selects the map
+CURRENT_MAP = 1
+
+
+def set_map_to(map_nr: int):
+    global CURRENT_MAP
+    CURRENT_MAP = map_nr
 
 
 def get_map_array():
@@ -76,9 +81,9 @@ def get_end_position():
     return Map_Obj(CURRENT_MAP).get_end_goal_pos()
 
 
-def remove_green_color(grid):
+def set_original_color(grid):
     """
-    Removes the green squares when the shortes path is found.
+    Sets the squares back to their original color.
     :param grid: The grid
     :return:
     """
@@ -147,13 +152,12 @@ def draw_grid(win, rows, columns, width):
     :param win: The pygame window
     :param rows: The amount of rows
     :param width: The width of the pygame window
-    :return: None
     """
     gap = (width // rows)
     for i in range(rows):
-        pygame.draw.line(win, GREY, (0, i * gap), (width, i * gap))
+        pygame.draw.line(win, LINE_GREY, (0, i * gap), (width, i * gap))
         for j in range(columns):
-            pygame.draw.line(win, GREY, (j * gap, 0), (j * gap, width))
+            pygame.draw.line(win, LINE_GREY, (j * gap, 0), (j * gap, width))
 
 
 def draw(win, grid, rows, columns, width):
@@ -164,9 +168,7 @@ def draw(win, grid, rows, columns, width):
     :param rows: The amount of rows
     :param columns: The amount of columns.
     :param width: The width of the pygame window
-    :return: None
     """
-    win.fill(WHITE)  # Sets the background of the window to white.
 
     # Draws the lines in the pygame window.
     for row in grid:
@@ -194,11 +196,23 @@ def backtrack(path, draw):
     Backtracks the path found in the algorithm and creates the path in the Pygame window.
     :param path: A list with the shortest path.
     :param draw: The draw function to update the screen.
-    :return: None
     """
     for current in path:
         current.make_path()
         draw()
+
+
+def check_if_in_open(node: Square, open_list: PriorityQueue):
+    """
+    Checks if the node is in the open_list
+    :param node: The square we want to check
+    :param open_list: The priority queue with the open nodes
+    :return: True if the node is in the open_list.
+    """
+    for square in open_list.queue:
+        if node.col == square[1].col and node.row == square[1].row:
+            return True
+    return False
 
 
 def algorithm(draw, grid):
@@ -219,20 +233,16 @@ def algorithm(draw, grid):
     start = get_start_position()
     start_square: Square = grid[start[0]][start[1]]
 
-    hash_open_list = []
-
     # The end square
     end = get_end_position()
     end_square: Square = grid[end[0]][end[1]]
 
     # Puts the start square in the open list.
     open_list.put((start_square.f_value, start_square))
-    hash_open_list.append(start_square)
 
     while not open_list.empty():
         # The list is sorted by the lowest f value. The get removes the square from the Priority Queue.
         current_square: Square = open_list.get()[1]
-        hash_open_list.remove(current_square)
 
         # Adds the current square to the closed list.
         closed_list.append(current_square)
@@ -243,10 +253,8 @@ def algorithm(draw, grid):
             path = []
             current = current_square
             while current is not None:
-                # current.make_path()
                 path.append(current)
                 current = current.parent
-                # draw()
             return path[::-1]  # Return reversed path
 
         else:
@@ -259,14 +267,8 @@ def algorithm(draw, grid):
                     square.h_value = calculate_h_value(square.get_pos(), end_square.get_pos())
                     square.f_value = square.g_value + square.h_value
 
-                    # If the square equals a square in the open list and the g value is more we continue
-                    # with the next iteration of the for-loop
-                    for open_node in hash_open_list:
-                        if square == open_node and square.g_value > open_node.g_value:
-                            continue
                     # If the square is not in the open list, we add it and change the color of it in the pygame window.
-                    if square not in hash_open_list:
-                        hash_open_list.append(square)
+                    if not check_if_in_open(square, open_list):
                         if square is not start_square and square is not end_square:
                             square.set_color(GREEN)
 
@@ -278,7 +280,7 @@ def algorithm(draw, grid):
 
 
 def main():
-    rows = get_map_rows()  # gets the amount of rows
+    rows = get_map_rows()  # Gets the amount of rows
     columns = get_map_columns()  # Gets the amount of columns
     map_array = get_map_array()  # Gets the 2D array of the map
     grid = make_grid(rows, WIDTH, map_array)  # Creates the grid
@@ -298,14 +300,33 @@ def main():
                 if event.key == pygame.K_ESCAPE:
                     run = False
 
-            # Runs the algorithm when space is pressed
-            if event.type == pygame.KEYDOWN:
+                # Runs the algorithm when space is pressed
                 if event.key == pygame.K_SPACE:
                     grid = make_grid(rows, WIDTH, map_array)  # Clears the grid if the code ran before.
                     path = algorithm(lambda: draw(WIN, grid, rows, columns, WIDTH),
                                      grid)  # returns the path from algorithm
-                    remove_green_color(grid)
+                    # set_original_color(grid)
                     backtrack(path, lambda: draw(WIN, grid, rows, columns, WIDTH))  # Draws the path
+
+                if event.key == pygame.K_1:
+                    set_map_to(1)
+                    map_array = get_map_array()  # Gets the 2D array of the map
+                    grid = make_grid(rows, WIDTH, map_array)  # Clears the grid if the code ran before.
+
+                if event.key == pygame.K_2:
+                    set_map_to(2)
+                    map_array = get_map_array()  # Gets the 2D array of the map
+                    grid = make_grid(rows, WIDTH, map_array)  # Clears the grid if the code ran before.
+
+                if event.key == pygame.K_3:
+                    set_map_to(3)
+                    map_array = get_map_array()  # Gets the 2D array of the map
+                    grid = make_grid(rows, WIDTH, map_array)  # Clears the grid if the code ran before.
+
+                if event.key == pygame.K_4:
+                    set_map_to(4)
+                    map_array = get_map_array()  # Gets the 2D array of the map
+                    grid = make_grid(rows, WIDTH, map_array)  # Clears the grid if the code ran before.
 
     pygame.quit()
 
